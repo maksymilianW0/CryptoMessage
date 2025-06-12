@@ -46,6 +46,15 @@ def encode_data(data_list, format_str):
             else:
                 value = value.ljust(length, b'\x00')
             result += value
+        elif type_part == "str":
+            if not isinstance(value, str):
+                raise TypeError("Wartość dla typu 'str' musi być napisem.")
+            value = value.encode("utf-8")
+            if len(value) > length:
+                value = value[:length]
+            else:
+                value = value.rjust(length, b'\x00')
+            result += value
         elif type_part == "float":
             # Używamy formatu double (8 bajtów); wymagana długość to dokładnie 8.
             if length != 8:
@@ -90,6 +99,8 @@ def decode_data(data_bytes, format_str):
             result.append(value)
         elif type_part == "bytes":
             result.append(segment)
+        elif type_part == "str":
+            result.append(segment.rstrip(b"\x00").decode("utf-8"))
         elif type_part == "float":
             if length != 8:
                 raise ValueError("Float musi być zakodowany na 8 bajtach.")
