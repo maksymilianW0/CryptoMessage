@@ -71,7 +71,7 @@ def handle_connection(sock: socket.socket, addr, queue_id):
             secondary_header_raw = sock.recv(secondary_header_length)
             secondary_header = encoder.decode_data(secondary_header_raw, secondary_header_format)
 
-            data = None
+            data_raw = b""
         
         elif primary_header[1] == "pong":
             secondary_header_length = 32
@@ -80,7 +80,7 @@ def handle_connection(sock: socket.socket, addr, queue_id):
             secondary_header_raw = sock.recv(secondary_header_length)
             secondary_header = encoder.decode_data(secondary_header_raw, secondary_header_format)
 
-            data = None
+            data_raw = None
         
         elif primary_header[1] == "broadcast-message":
             secondary_header_length = 116
@@ -96,15 +96,15 @@ def handle_connection(sock: socket.socket, addr, queue_id):
 
             secondary_header.append(encryption_params)
 
-            data = sock.recv(secondary_header[2])
+            data_raw = sock.recv(secondary_header[2])
         
-        pow_nonce = sock.recv(4)
+        pow_nonce_raw = sock.recv(4)
 
-        signature = sock.recv(64)
+        signature_raw = sock.recv(64)
 
 
-        message_hash = hashlib.sha3_256(primary_header_raw + secondary_header_raw + data + signature).digest()
+        message_hash = hashlib.sha3_256(primary_header_raw + secondary_header_raw + data_raw + signature_raw).digest()
 
-        message = [primary_header, secondary_header, data, pow_nonce, signature, message_hash, queue_id]
+        message = [primary_header_raw, secondary_header_raw, data_raw, pow_nonce_raw, signature_raw, message_hash, queue_id]
 
         app.received_message_queue.put(message)

@@ -3,7 +3,8 @@ import queue, threading, importlib, os, sqlite3, json
 from pathlib import Path
 
 # LOCAL MODULES
-from core_modules import server, message_processor
+from core_modules import server, message_processor, initializer
+import client
 
 def load_plugins(app, plugin_dir="plugins"):
     for filename in os.listdir(plugin_dir):
@@ -35,21 +36,40 @@ def load_modules(app, modules_dir="modules"):
 
 class App:
     def __init__(self):
+        self.ready = threading.Event()
+        self.key = queue.Queue()
+
+        self.global_private = None
+
+        self.state = "full-ready"
+
         self.received_message_queue = queue.Queue()
         self.server_connection_queues = dict()
         self.core_database_path = "db/core.db"
 
-        self.pow_difficulty = 1
+        self.processed_messages_pool = queue.Queue()
+        self.already_emited = set()
 
-        with open("config.json", "r") as f:
+        self.protocol_version = 1
+
+        self.pow_target = int(str("ff"*32), 16)
+
+        with open("src/config.json", "r") as f:
             self.config = json.load(f)
         
         self.server_address = (self.config["server"]["address"], self.config["server"]["port"])
 
 app = App()
 
+threading.Thread(target=initializer.init, args=(app,)).start()
+
+if app.config["modules"]["client"]:
+    threading.Thread(target=client.init, args=(app,)).start()
+
+app.ready.wait()
+
 threading.Thread(target=server.init, args=(app,)).start()
 threading.Thread(target=message_processor.init, args=(app,)).start()
 
 load_modules(app)
-load_plugins(app)
+# load_plugins(app)
