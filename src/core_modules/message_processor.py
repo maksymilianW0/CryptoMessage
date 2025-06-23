@@ -35,6 +35,8 @@ def processor():
         sender_public_raw = primary_header[4]
         sender_address = hashlib.sha3_256(hashlib.sha3_256(sender_public_raw).digest()).digest()[:20]
 
+        app.addresses[sender_address] = sender_public_raw
+
         secondary_header_response_format = "str:32"
 
         primary_header_response = [app.protocol_version, "pong", b"\x00"*32, int(time.time()), app.global_private.public_key().export_key(format="raw")]
@@ -50,6 +52,11 @@ def processor():
 
         response_raw = primary_header_response_raw + secondary_header_response_raw + data_response_raw + pow_nonce_response_raw + signature_response_raw
         app.server_connection_queues[message[6]].put(response_raw)
+    
+    def process_pong(message):
+        global app
+
+        pass
     
     def process_broadcast_message(message):
         global app
@@ -91,3 +98,7 @@ def processor():
 
         if encoder.decode_data(message[0], primary_header_format)[1] == "ping-address":
             process_ping_address(message)
+        if encoder.decode_data(message[0], primary_header_format)[1] == "pong":
+            process_pong(message)
+        if encoder.decode_data(message[0], primary_header_format)[1] == "broadcast-message":
+            process_broadcast_message(message)

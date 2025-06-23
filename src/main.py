@@ -50,6 +50,8 @@ class App:
         self.processed_messages_pool = queue.Queue()
         self.already_emited = set()
 
+        self.addresses = dict()
+
         self.protocol_version = 1
 
         self.pow_target = int(str("ff"*32), 16)
